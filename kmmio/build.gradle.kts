@@ -21,6 +21,7 @@ plugins {
 }
 
 kotlin {
+    withSourcesJar()
     mingwX64()
     linuxX64()
     linuxArm64()
@@ -76,30 +77,18 @@ dokka {
     }
 }
 
-val dokkaJar by tasks.registering(Jar::class) {
-    dependsOn(tasks.dokkaGeneratePublicationHtml)
-    from(tasks.dokkaGeneratePublicationHtml.flatMap { it.outputDirectory })
-    archiveClassifier.set("javadoc")
-}
-
-tasks {
-    System.getProperty("publishDocs.root")?.let { docsDir ->
-        register("publishDocs", Copy::class) {
-            dependsOn(dokkaJar)
-            mustRunAfter(dokkaJar)
-            from(zipTree(dokkaJar.get().outputs.files.first()))
-            into(docsDir)
-        }
-    }
-}
-
 publishing {
     repositories {
-        with(CI) { authenticatedPackageRegistry() }
+        maven {
+            url = uri("https://maven.rtast.cn/releases/")
+            credentials {
+                username = "RTAkland"
+                password = System.getenv("PUBLISH_TOKEN")
+            }
+        }
     }
     publications {
         withType<MavenPublication> {
-            artifact(dokkaJar)
             pom {
                 name = project.name
                 description = "Lightweight MMIO for Kotlin Multiplatform."
